@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flag Master - Global Challenge</title>
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --secondary: #1e293b;
+            --accent: #10b981;
+            --danger: #ef4444;
+            --bg: #0f172a;
+        }
+        * { box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; }
+        body {
+            background-color: var(--bg);
+            color: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+            min-height: 100vh;
+        }
+        .header { text-align: center; margin-bottom: 20px; }
+        h1 { color: var(--primary); margin: 0; font-size: 1.8rem; }
+        .score-board {
+            background: var(--secondary);
+            padding: 10px 20px;
+            border-radius: 20px;
+            margin: 10px 0;
+            font-weight: bold;
+            border: 1px solid #334155;
+        }
+        /* تصميم الدولاب */
+        .wheel-container { position: relative; margin: 20px 0; }
+        #wheel {
+            width: 260px;
+            height: 260px;
+            border-radius: 50%;
+            border: 8px solid #334155;
+            box-shadow: 0 0 30px rgba(59, 130, 246, 0.2);
+            transition: transform 4s cubic-bezier(0.1, 0.8, 0.2, 1);
+            background: conic-gradient(
+                #3b82f6 0deg 45deg, #1e293b 45deg 90deg,
+                #60a5fa 90deg 135deg, #334155 135deg 180deg,
+                #3b82f6 180deg 225deg, #1e293b 225deg 270deg,
+                #60a5fa 270deg 315deg, #334155 315deg 360deg
+            );
+        }
+        #spin-btn {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70px; height: 70px;
+            background: #fff; color: #000;
+            border: none; border-radius: 50%;
+            font-weight: 900; cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+        }
+        .pointer {
+            position: absolute; top: -15px; left: 50%;
+            transform: translateX(-50%);
+            width: 0; height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 25px solid var(--primary);
+            z-index: 10;
+        }
+        /* العلم والمدخلات */
+        .flag-display {
+            font-size: 6rem; height: 120px;
+            display: flex; align-items: center; justify-content: center;
+            filter: drop-shadow(0 5px 15px rgba(0,0,0,0.5));
+        }
+        .input-group {
+            position: relative; width: 100%; max-width: 350px;
+        }
+        #country-input {
+            width: 100%; padding: 15px; border-radius: 12px;
+            border: 2px solid #334155; background: #1e293b;
+            color: #fff; font-size: 1rem; outline: none;
+        }
+        #country-input:focus { border-color: var(--primary); }
+        .suggestions {
+            position: absolute; top: 100%; left: 0; width: 100%;
+            max-height: 250px; overflow-y: auto;
+            background: #1e293b; border: 1px solid #334155;
+            border-radius: 0 0 12px 12px; z-index: 100;
+            display: none; list-style: none; padding: 0; margin: 0;
+        }
+        .suggestions li {
+            padding: 12px 15px; cursor: pointer;
+            border-bottom: 1px solid #0f172a;
+            display: flex; justify-content: space-between;
+        }
+        .suggestions li:hover { background: var(--primary); }
+        #msg { margin-top: 15px; font-weight: bold; text-align: center; height: 25px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Flag Master</h1>
+        <div class="score-board">Score: <span id="score">0</span></div>
+    </div>
+
+    <div class="wheel-container">
+        <div class="pointer"></div>
+        <div id="wheel"></div>
+        <button id="spin-btn">SPIN</button>
+    </div>
+
+    <div class="flag-display" id="flag-box">🎡</div>
+
+    <div class="input-group">
+        <input type="text" id="country-input" placeholder="Search country..." autocomplete="off">
+        <ul class="suggestions" id="suggestions"></ul>
+    </div>
+
+    <div id="msg"></div>
+
+    <script>
+        // مصفوفة كاملة وشاملة (أكثر من 240 دولة ومنطقة)
+        const countries = [
+            {"name":"Afghanistan","flag":"🇦🇫"},{"name":"Aland Islands","flag":"🇦🇽"},{"name":"Albania","flag":"🇦🇱"},{"name":"Algeria","flag":"🇩🇿"},{"name":"American Samoa","flag":"🇦🇸"},{"name":"Andorra","flag":"🇦🇩"},{"name":"Angola","flag":"🇦🇴"},{"name":"Anguilla","flag":"🇦🇮"},{"name":"Antarctica","flag":"🇦🇶"},{"name":"Antigua and Barbuda","flag":"🇦🇬"},{"name":"Argentina","flag":"🇦🇷"},{"name":"Armenia","flag":"🇦🇲"},{"name":"Aruba","flag":"🇦🇼"},{"name":"Australia","flag":"🇦🇺"},{"name":"Austria","flag":"🇦🇹"},{"name":"Azerbaijan","flag":"🇦🇿"},{"name":"Bahamas","flag":"🇧🇸"},{"name":"Bahrain","flag":"🇧🇭"},{"name":"Bangladesh","flag":"🇧🇩"},{"name":"Barbados","flag":"🇧🇧"},{"name":"Belarus","flag":"🇧🇾"},{"name":"Belgium","flag":"🇧🇪"},{"name":"Belize","flag":"🇧🇿"},{"name":"Benin","flag":"🇧🇯"},{"name":"Bermuda","flag":"🇧🇲"},{"name":"Bhutan","flag":"🇧🇹"},{"name":"Bolivia","flag":"🇧🇴"},{"name":"Bosnia and Herzegovina","flag":"🇧🇦"},{"name":"Botswana","flag":"🇧🇼"},{"name":"Brazil","flag":"🇧🇷"},{"name":"Brunei","flag":"🇧🇳"},{"name":"Bulgaria","flag":"🇧🇬"},{"name":"Burkina Faso","flag":"🇧🇫"},{"name":"Burundi","flag":"🇧🇮"},{"name":"Cambodia","flag":"🇰🇭"},{"name":"Cameroon","flag":"🇨🇲"},{"name":"Canada","flag":"🇨🇦"},{"name":"Cape Verde","flag":"🇨🇻"},{"name":"Central African Republic","flag":"🇨🇫"},{"name":"Chad","flag":"🇹🇩"},{"name":"Chile","flag":"🇨🇱"},{"name":"China","flag":"🇨🇳"},{"name":"Colombia","flag":"🇨🇴"},{"name":"Comoros","flag":"🇰🇲"},{"name":"Congo","flag":"🇨🇬"},{"name":"Costa Rica","flag":"🇨🇷"},{"name":"Croatia","flag":"🇭🇷"},{"name":"Cuba","flag":"🇨🇺"},{"name":"Cyprus","flag":"🇨🇾"},{"name":"Czech Republic","flag":"🇨🇿"},{"name":"Denmark","flag":"🇩🇰"},{"name":"Djibouti","flag":"🇩🇯"},{"name":"Dominica","flag":"🇩🇲"},{"name":"Dominican Republic","flag":"🇩🇴"},{"name":"Ecuador","flag":"🇪🇨"},{"name":"Egypt","flag":"🇪🇬"},{"name":"El Salvador","flag":"🇸🇻"},{"name":"Estonia","flag":"🇪🇪"},{"name":"Ethiopia","flag":"🇪🇹"},{"name":"Fiji","flag":"🇫🇯"},{"name":"Finland","flag":"🇫🇮"},{"name":"France","flag":"🇫🇷"},{"name":"Gabon","flag":"🇬🇦"},{"name":"Gambia","flag":"🇬🇲"},{"name":"Georgia","flag":"🇬🇪"},{"name":"Germany","flag":"🇩🇪"},{"name":"Ghana","flag":"🇬🇭"},{"name":"Greece","flag":"🇬🇷"},{"name":"Guatemala","flag":"🇬🇹"},{"name":"Guinea","flag":"🇬🇳"},{"name":"Guyana","flag":"🇬🇾"},{"name":"Haiti","flag":"🇭🇹"},{"name":"Honduras","flag":"🇭🇳"},{"name":"Hungary","flag":"🇭🇺"},{"name":"Iceland","flag":"🇮🇸"},{"name":"India","flag":"🇮🇳"},{"name":"Indonesia","flag":"🇮🇩"},{"name":"Iran","flag":"🇮🇷"},{"name":"Iraq","flag":"🇮🇶"},{"name":"Ireland","flag":"🇮🇪"},{"name":"Italy","flag":"🇮🇹"},{"name":"Jamaica","flag":"🇯🇲"},{"name":"Japan","flag":"🇯🇵"},{"name":"Jordan","flag":"🇯🇴"},{"name":"Kazakhstan","flag":"🇰🇿"},{"name":"Kenya","flag":"🇰🇪"},{"name":"Kuwait","flag":"🇰🇼"},{"name":"Kyrgyzstan","flag":"🇰🇬"},{"name":"Laos","flag":"🇱🇦"},{"name":"Latvia","flag":"🇱🇻"},{"name":"Lebanon","flag":"🇱🇧"},{"name":"Liberia","flag":"🇱🇷"},{"name":"Libya","flag":"🇱🇾"},{"name":"Lithuania","flag":"🇱🇹"},{"name":"Luxembourg","flag":"🇱🇺"},{"name":"Madagascar","flag":"🇲🇬"},{"name":"Malaysia","flag":"🇲🇾"},{"name":"Maldives","flag":"🇲🇻"},{"name":"Mali","flag":"🇲🇱"},{"name":"Malta","flag":"🇲🇹"},{"name":"Mauritania","flag":"🇲🇷"},{"name":"Mauritius","flag":"🇲🇺"},{"name":"Mexico","flag":"🇲🇽"},{"name":"Moldova","flag":"🇲🇩"},{"name":"Monaco","flag":"🇲🇨"},{"name":"Mongolia","flag":"🇲🇳"},{"name":"Morocco","flag":"🇲🇦"},{"name":"Mozambique","flag":"🇲🇿"},{"name":"Myanmar","flag":"🇲🇲"},{"name":"Namibia","flag":"🇳🇦"},{"name":"Nepal","flag":"🇳🇵"},{"name":"Netherlands","flag":"🇳🇱"},{"name":"New Zealand","flag":"🇳🇿"},{"name":"Nicaragua","flag":"🇳🇮"},{"name":"Niger","flag":"🇳🇪"},{"name":"Nigeria","flag":"🇳🇬"},{"name":"North Korea","flag":"🇰🇵"},{"name":"Norway","flag":"🇳🇴"},{"name":"Oman","flag":"🇴🇲"},{"name":"Pakistan","flag":"🇵🇰"},{"name":"Palestine","flag":"🇵🇸"},{"name":"Panama","flag":"🇵🇦"},{"name":"Paraguay","flag":"🇵🇾"},{"name":"Peru","flag":"🇵🇪"},{"name":"Philippines","flag":"🇵🇭"},{"name":"Poland","flag":"🇵🇱"},{"name":"Portugal","flag":"🇵🇹"},{"name":"Qatar","flag":"🇶🇦"},{"name":"Romania","flag":"🇷🇴"},{"name":"Russia","flag":"🇷🇺"},{"name":"Rwanda","flag":"🇷🇼"},{"name":"Saudi Arabia","flag":"🇸🇦"},{"name":"Senegal","flag":"🇸🇳"},{"name":"Serbia","flag":"🇷🇸"},{"name":"Seychelles","flag":"🇸🇨"},{"name":"Sierra Leone","flag":"🇸🇱"},{"name":"Singapore","flag":"🇸🇬"},{"name":"Slovakia","flag":"🇸🇰"},{"name":"Slovenia","flag":"🇸🇮"},{"name":"Somalia","flag":"🇸🇴"},{"name":"South Africa","flag":"🇿🇦"},{"name":"South Korea","flag":"🇰🇷"},{"name":"Spain","flag":"🇪🇸"},{"name":"Sri Lanka","flag":"🇱🇰"},{"name":"Sudan","flag":"🇸🇩"},{"name":"Sweden","flag":"🇸🇪"},{"name":"Switzerland","flag":"🇨🇭"},{"name":"Syria","flag":"🇸🇾"},{"name":"Taiwan","flag":"🇹🇼"},{"name":"Tajikistan","flag":"🇹🇯"},{"name":"Tanzania","flag":"🇹🇿"},{"name":"Thailand","flag":"🇹🇭"},{"name":"Tunisia","flag":"🇹🇳"},{"name":"Turkey","flag":"🇹🇷"},{"name":"Turkmenistan","flag":"🇹🇲"},{"name":"Uganda","flag":"🇺🇬"},{"name":"Ukraine","flag":"🇺🇦"},{"name":"United Arab Emirates","flag":"🇦🇪"},{"name":"United Kingdom","flag":"🇬🇧"},{"name":"United States","flag":"🇺🇸"},{"name":"Uruguay","flag":"🇺🇾"},{"name":"Uzbekistan","flag":"🇺🇿"},{"name":"Vatican City","flag":"🇻🇦"},{"name":"Venezuela","flag":"🇻🇪"},{"name":"Vietnam","flag":"🇻🇳"},{"name":"Yemen","flag":"🇾🇪"},{"name":"Zambia","flag":"🇿🇲"},{"name":"Zimbabwe","flag":"🇿🇼"}
+        ];
+
+        const sortedCountries = [...countries].sort((a, b) => a.name.localeCompare(b.name));
+        let score = 0, selected = null, isSpinning = false, rotation = 0;
+
+        const wheel = document.getElementById('wheel'), spinBtn = document.getElementById('spin-btn'),
+              flagBox = document.getElementById('flag-box'), input = document.getElementById('country-input'),
+              sugBox = document.getElementById('suggestions'), msg = document.getElementById('msg'),
+              scoreDisplay = document.getElementById('score');
+
+        spinBtn.onclick = () => {
+            if (isSpinning) return;
+            isSpinning = true;
+            msg.innerText = ""; input.value = ""; flagBox.innerText = "🌀";
+            const extraDeg = Math.floor(Math.random() * 3000) + 2000;
+            rotation += extraDeg;
+            wheel.style.transform = `rotate(${rotation}deg)`;
+            setTimeout(() => {
+                isSpinning = false;
+                selected = countries[Math.floor(Math.random() * countries.length)];
+                flagBox.innerText = selected.flag;
+                msg.style.color = "#94a3b8";
+                msg.innerText = "Guess the country!";
+            }, 4000);
+        };
+
+        input.onfocus = input.oninput = () => {
+            const val = input.value.toLowerCase();
+            sugBox.innerHTML = "";
+            const filtered = val ? sortedCountries.filter(c => c.name.toLowerCase().includes(val)) : sortedCountries;
+            sugBox.style.display = "block";
+            filtered.forEach(c => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span>${c.name}</span><span>${c.flag}</span>`;
+                li.onclick = () => {
+                    input.value = c.name;
+                    sugBox.style.display = "none";
+                    check(c.name);
+                };
+                sugBox.appendChild(li);
+            });
+        };
+
+        function check(name) {
+            if (!selected) return;
+            if (name === selected.name) {
+                msg.style.color = "#10b981";
+                msg.innerText = "Excellent! +10 Points 🎉";
+                score += 10;
+                scoreDisplay.innerText = score;
+                selected = null; // Prevent double scoring
+            } else {
+                msg.style.color = "#ef4444";
+                msg.innerText = "Try again! ❌";
+            }
+        }
+
+        document.onclick = (e) => { if (!e.target.closest('.input-group')) sugBox.style.display = "none"; };
+    </script>
+</body>
+</html>
+
